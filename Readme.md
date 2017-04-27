@@ -113,7 +113,7 @@ A lightweight JavaScript library that creates customisable progress bars for HTM
     
 ## Development
 
-Pull requests are very welcome. Please develop with `progressor.js` and then compile the minified version by running `grunt`.
+Pull requests are very welcome. Please develop with `progressor.js` and then compile the minified version by running `grunt uglify`.
 
 ## License
 
