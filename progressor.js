@@ -1,9 +1,27 @@
 (function(name, definition) {
+
     if (typeof module != 'undefined') module.exports = definition();
     else if (typeof define == 'function' && typeof define.amd == 'object') define(definition);
     else this[name] = definition();
+
 }('Progressor', function() {
+
     function Progressor( options ){
+
+        var player = null;
+        this._isYt = false;
+        this._media = options.media;
+
+        // YouTube Video
+        if ( options.media.driver._ytEl ){
+
+            player = options.media.driver._ytEl;
+            this._isYt = true;
+            this._media.getCurrentTime = player.getCurrentTime.bind(player); 
+            this._media.duration = player.getDuration.call(player); 
+
+        } 
+
         this._media = options.media;
         this._bar = options.bar;
         this._text = options.text;
@@ -11,12 +29,26 @@
         this._hours = options.hours;
         this.initProgressBar();
         this.initMedia();
+
     };
 
+    Progressor.prototype.initYouTubeInterval = function() {
+
+        if ( !this._isYt ) return;
+        this.ytInterval = setInterval(function(){
+            this._media.currentTime = this._media.getCurrentTime();
+            this.updateProgress.call(this);            
+            this.updateTimeCount.call(this);
+        }.bind(this), 500);
+
+    };
 
     Progressor.prototype.initMedia = function() {
-        this._media.addEventListener('timeupdate', this.updateProgress.bind(this), false);
-        this._media.addEventListener('timeupdate', this.updateTimeCount.bind(this), false);
+        if ( !this._isYt ){
+            this._media.addEventListener('timeupdate', this.updateProgress.bind(this), false);
+            this._media.addEventListener('timeupdate', this.updateTimeCount.bind(this), false);
+        } 
+        this.initYouTubeInterval();
         this.addClickEvents();
         this.updateTimeCount(this._media);
     };
@@ -43,12 +75,13 @@
     };
 
     Progressor.prototype.updateProgress = function() {
+        console.log("updateProgress",this._media.getCurrentTime());
         this.updateTimeCount();
         var value = 0;
-        if (this._media.currentTime > 0) {
-            value =(100 / this._media.duration) * this._media.currentTime;
-        }
+        var currTime = this._media.currentTime;
+        if ( currTime > 0 ) { value = ( 100 / this._media.duration ) * currTime; }
         // this._bar.getElementsByTagName('div')[0].clientWidth = value + "%";
+        console.log("updateProgress::this._media.currentTime",this._media.currentTime);
         this._bar.getElementsByTagName('div')[0].style.width = value + "%";
     };
 
@@ -70,7 +103,8 @@
 
     Progressor.prototype.updateTimeCount = function(){
         if ( this._time ) {
-            var currTime = this.formatTime ( this._media.currentTime );
+            var currTime = this._media.currentTime;
+                currTime = this.formatTime ( currTime );
             var totalTime = this.formatTime ( this._media.duration );
             if ( isNaN( this._media.duration ) === true ) { totalTime = "00:00" };
             this._time.innerHTML = currTime + "/" + totalTime;        
@@ -118,8 +152,12 @@
             mouseEventRefresh = '';
         var mouseDown = function(e){
             isMouseDown = true;
-            wasPlaying = !this._media.paused;
+            wasPlaying = ( this._isYt )? !(this._media.driver._ytEl.getPlayerState() == 2) : !this._media.paused;
             this._media.pause();
+            if ( this._isYt ) {
+                this._media.driver._ytEl.pauseVideo();
+                clearInterval(this.ytInterval);
+            }
             this.setMediaProgress(e);
         }
         var mouseUp = function(e){
@@ -129,6 +167,10 @@
                 this._media.play();
                 wasPlaying = false;
             };
+            if (this._isYt) {
+                this._media.driver._ytEl.seekTo(this._media.currentTime);
+                this.initYouTubeInterval();
+            } 
         }
         var mouseMove = function(e){
             if ( isMouseDown === true ) {
