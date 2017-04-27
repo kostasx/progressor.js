@@ -13,7 +13,7 @@
         this._media = options.media;
 
         // YouTube Video
-        if ( options.media.driver._ytEl ){
+        if ( options.media.driver && options.media.driver._ytEl ){
 
             player = options.media.driver._ytEl;
             this._isYt = true;
@@ -75,13 +75,11 @@
     };
 
     Progressor.prototype.updateProgress = function() {
-        console.log("updateProgress",this._media.getCurrentTime());
         this.updateTimeCount();
         var value = 0;
         var currTime = this._media.currentTime;
         if ( currTime > 0 ) { value = ( 100 / this._media.duration ) * currTime; }
         // this._bar.getElementsByTagName('div')[0].clientWidth = value + "%";
-        console.log("updateProgress::this._media.currentTime",this._media.currentTime);
         this._bar.getElementsByTagName('div')[0].style.width = value + "%";
     };
 
